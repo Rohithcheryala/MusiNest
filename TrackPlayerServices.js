@@ -13,10 +13,11 @@ export async function setupPlayer() {
   } catch {
     await TrackPlayer.setupPlayer();
     await TrackPlayer.updateOptions({
-      // android: {
-      //   appKilledPlaybackBehavior:
-      //     AppKilledPlaybackBehavior.StopPlaybackAndRemoveNotification,
-      // },
+      android: {
+        appKilledPlaybackBehavior:
+          AppKilledPlaybackBehavior.StopPlaybackAndRemoveNotification,
+        alwaysPauseOnInterruption: true,
+      },
       capabilities: [
         Capability.Play,
         Capability.Pause,
@@ -46,28 +47,4 @@ export async function setupPlayer() {
   } finally {
     return isSetup;
   }
-}
-
-export async function addTracks() {
-  await TrackPlayer.add([
-    {
-      id: "1",
-      url: require("@/assets/songs/Samajavaragamana.mp3"),
-      title: "Fluidity",
-      artist: "tobylane",
-      duration: 60,
-    },
-    {
-      id: "1",
-      url: require("@/assets/songs/Yamunna Thatilo.mp3"),
-      title: "Fluidity",
-      artist: "tobylane",
-      duration: 60,
-    },
-  ]);
-  await TrackPlayer.setRepeatMode(RepeatMode.Queue);
-}
-
-export async function playbackService() {
-  // TODO: Attach remote event handlers
 }
