@@ -20,7 +20,7 @@ export const FloatingPlayer = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [sliderValue, setSliderValue] = useState<number>(0);
   const [isSeeking, setIsSeeking] = useState<boolean>(false);
-  const [data, setData] = useState<SongData | undefined | null>();
+  const [data, setData] = useState<SongData | undefined>();
 
   const playbackState = usePlaybackState();
   const progress = useProgress();
@@ -79,13 +79,9 @@ export const FloatingPlayer = () => {
 
       console.log(songId);
 
-      const songData: SongData | undefined | null = await getSongDataById(
-        songId
-      );
+      const songData = await getSongDataById(songId);
       if (!songData) {
-        const songData: SongData | undefined | null = await getSongDataById(
-          currentTrack.id
-        );
+        const songData = await getSongDataById(currentTrack.id);
         setData(songData);
       } else {
         setData(songData); // Set the fetched song data

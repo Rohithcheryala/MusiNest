@@ -26,7 +26,7 @@ import ArtistAndAlbum from "./ArtistAndAlbum";
 type OptionsModalProps = {
   isVisible: boolean;
   onClose: () => void;
-  track: SongData | undefined;
+  track: SongData;
 };
 
 const TrackOptions: React.FC<OptionsModalProps> = ({
@@ -38,7 +38,7 @@ const TrackOptions: React.FC<OptionsModalProps> = ({
   const [showAlbumAndArtist, setShowAlbumAndArtist] = useState<boolean>(false);
   const [albumOrArtist, setAlbumOrArtist] = useState<string>("");
   const [pictureData, setPictureData] = useState<string>();
-  const [trackData, setTrackData] = useState<SongData>();
+  const [trackData, setTrackData] = useState<SongData>(track);
   const [isLikedToggled, setIsLikedToggled] = useState(false); // New state for tracking like toggle
   const [playlists, setPlaylists] = useState<
     { id: number; playlistName: string }[]
@@ -70,7 +70,7 @@ const TrackOptions: React.FC<OptionsModalProps> = ({
         const data = await getSongDataById(track.id);
         if (data) {
           setTrackData(data);
-          console.log("liked status: ", data.isLiked);
+          // console.log("liked status: ", data.isLiked);
         }
       }
     };
@@ -130,7 +130,7 @@ const TrackOptions: React.FC<OptionsModalProps> = ({
 
   if (!track) return null;
 
-  console.log("selected track: ", track.title, " is liked: ", track.isLiked);
+  // console.log("selected track: ", track.title, " is liked: ", track.isLiked);
 
   return (
     <Modal

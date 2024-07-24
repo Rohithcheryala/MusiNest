@@ -18,9 +18,7 @@ const FavoritesScreen = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [likedData, setLikedData] = useState<SongData[]>([]);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [filteredTracks, setFilteredTracks] = useState<SongData[] | undefined>(
-    []
-  );
+  const [filteredTracks, setFilteredTracks] = useState<SongData[]>([]);
 
   useEffect(() => {
     fetchLikedData();

@@ -5,13 +5,25 @@ import { AlbumData, SongData } from "./types";
 // SQLite.deleteDatabaseSync("music_app.db");
 const dbPromise = SQLite.openDatabaseAsync("music_app.db");
 
+export async function checkDatabase() {
+  const db = await dbPromise;
+  try {
+    const res = db.getAllSync(
+      'SELECT name FROM sqlite_master WHERE type="table" AND name="Songs";'
+    );
+    return res.length != 0;
+  } catch (error) {
+    return false;
+  }
+}
+
 // Main data
-export async function createTables() {
+export async function InitDB() {
   // try {
   const db = await dbPromise;
 
   await db.execAsync(`
-    CREATE TABLE Songs (
+    CREATE TABLE IF NOT EXISTS Songs (
       _index INTEGER PRIMARY KEY AUTOINCREMENT,
       id TEXT NOT NULL,
       url TEXT NOT NULL,
@@ -122,6 +134,16 @@ export async function insertSong(song: SongData) {
   }
 }
 
+export async function deleteSong(song_id: string) {
+  const db = await dbPromise;
+
+  try {
+    await db.runAsync("DELETE * FROM Songs WHERE id = ?", [song_id]);
+  } catch (error) {
+    console.error(`Error deleting ${song_id}: ${error}`);
+  }
+}
+
 // export const getSongDataById = async (songId: string) => {
 export async function getSongDataById(song_id: string) {
   const db = await dbPromise;
@@ -132,10 +154,7 @@ export async function getSongDataById(song_id: string) {
     );
 
     if (result) {
-      console.log("////////////", result.isLiked);
       return result;
-    } else {
-      return undefined;
     }
   } catch (error) {
     console.log("Error fetching song data!!! ", error);
@@ -288,7 +307,7 @@ export const deletePlaylist = async (playlistId: number) => {
 
 export const deleteTrackFromPlaylist = async (
   platlistId: number,
-  trackId: string | undefined
+  trackId: string
 ) => {
   const db = await dbPromise;
   try {

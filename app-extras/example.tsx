@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { StyleSheet, SafeAreaView, Button, Text } from "react-native";
 import TrackPlayer from "react-native-track-player";
-import { addTracks, setupPlayer } from "@/TrackPlayerServices";
+import { setupPlayer } from "@/TrackPlayerServices";
 
 export default function HomeScreen() {
   const [isPlayerReady, setIsPlayerReady] = useState(false);
@@ -15,7 +15,7 @@ export default function HomeScreen() {
 
       const queue = await TrackPlayer.getQueue();
       if (isSetup && queue.length <= 0) {
-        await addTracks();
+        // await addTracks();
       }
 
       setIsPlayerReady(isSetup);

@@ -43,6 +43,7 @@ const Search: React.FC<Props> = ({
             sanitizedAlbum.includes(sanitizedQuery)
           );
         } else {
+          6;
           const sanitizedTitle = sanitizeString(track.filename || "");
           const sanitizedAlbum = sanitizeString(track?.albumId || "");
 

@@ -63,7 +63,7 @@ const PlaylistData = () => {
     fetchPlayListData(playlistName as string);
   }, []);
 
-  const handleDelete = async (songId: string | undefined) => {
+  const handleDelete = async (songId: string) => {
     await deleteTrackFromPlaylist(playlist?.id, songId);
     const data = playlistData?.filter((item) => item.id !== songId);
     setPlaylistData(data);

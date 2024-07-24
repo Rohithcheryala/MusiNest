@@ -11,7 +11,7 @@ export const Song = ({
   data: SongData;
   onclick: Function;
 }) => {
-  const [selectedTrack, setSelectedTrack] = useState<SongData>();
+  const [selectedTrack, setSelectedTrack] = useState<SongData>(data);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const handlePress = (data: SongData) => {
     //   setCurrentTrack(data);
@@ -25,7 +25,7 @@ export const Song = ({
 
   const hideOptions = () => {
     setIsModalVisible(false);
-    setSelectedTrack(undefined);
+    // setSelectedTrack(undefined);
   };
 
   return (

@@ -20,7 +20,7 @@ import { Song } from "./Song";
 type OptionsModalProps = {
   isVisible: boolean;
   onClose: () => void;
-  track: SongData | undefined;
+  track: SongData;
   type: string;
 };
 
@@ -33,9 +33,7 @@ const ArtistAndAlbum: React.FC<OptionsModalProps> = ({
   const [trackData, setTrackData] = useState<SongData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [filteredTracks, setFilteredTracks] = useState<SongData[] | undefined>(
-    []
-  );
+  const [filteredTracks, setFilteredTracks] = useState<SongData[]>([]);
 
   const splitArtists = (artistString: string): string[] => {
     // Regular expression to match any of the delimiters and their combinations

@@ -27,10 +27,6 @@ const PlayListScreen = () => {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [playlistModalVisible, setPlaylistModalVisible] =
     useState<boolean>(false);
-  const [playlistData, setPlaylistData] = useState<SongData[] | undefined>([]);
-  const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | null>(
-    null
-  );
 
   useEffect(() => {
     const checkForPlaylists = async () => {

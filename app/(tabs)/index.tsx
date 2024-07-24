@@ -2,11 +2,15 @@ import { Image, View, Text, TouchableOpacity, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { memo, useCallback, useEffect, useState } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { loadDataFromFileSystemOnePerSong } from "@/lib/data";
+import {
+  loadDataFromDisk,
+  loadDataFromFileSystemOnePerSong,
+  loadSongsData,
+} from "@/lib/data";
 import { FlashList } from "@shopify/flash-list";
 import TrackPlayer from "react-native-track-player";
 import { setupPlayer } from "@/TrackPlayerServices";
-import { createTables, getAllSongData, insertSong } from "@/lib/db";
+import { checkDatabase, InitDB, getAllSongData, insertSong } from "@/lib/db";
 import { SongData } from "@/lib/types";
 import { shuffle } from "@/lib/methods";
 import { Song } from "@/components/Song";
@@ -16,14 +20,33 @@ export default function HomeScreen() {
 
   // fetch songs
   useEffect(() => {
+    async function fetch2() {
+      try {
+        const resp = await loadSongsData();
+
+        if (resp instanceof Error) {
+          console.error("Error loading songs:", resp.message);
+        } else if (resp === undefined) {
+          console.warn("No songs data available");
+        } else {
+          setSongsList(resp);
+          console.log(resp.length);
+        }
+      } catch (error) {
+        console.log("shit:", error);
+      }
+    }
+
     async function fetch() {
+      const status = await checkDatabase();
+      console.log("the status is ", status);
       setupPlayer();
       console.log(`fetching songs`);
-      const res = await loadDataFromFileSystemOnePerSong();
+      const res: SongData[] = await loadDataFromDisk();
       setSongsList(res);
-      console.log("in tryyy");
+      console.log("lnght", res.length);
       try {
-        await createTables();
+        await InitDB();
         for (const r of res) {
           console.log("whyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
           insertSong(r);
@@ -35,15 +58,19 @@ export default function HomeScreen() {
       }
     }
 
-    fetch();
+    fetch2();
   }, []);
 
   return (
-    <SafeAreaView className="flex-1">
-      <FlatList
+    <SafeAreaView className="flex-1 bg-gray-700">
+      <FlashList
         data={songsList}
         keyExtractor={(item, index) => `${index}`}
-        // estimatedItemSize={100}
+        estimatedItemSize={500}
+        scrollIndicatorInsets={{ right: 1 }}
+        // renderScrollComponent={(s) => (
+        //   <View className="w-2 h-6 bg-purple-500 right-0"></View>
+        // )}
         renderItem={({ item }) => (
           <Song
             data={item}
@@ -78,7 +105,7 @@ export default function HomeScreen() {
         ListHeaderComponent={() => {
           return (
             <View>
-              <Text className="text-white text-4xl">All SongS</Text>
+              <Text className={`text-white text-4xl`}>All SongS</Text>
             </View>
           );
         }}

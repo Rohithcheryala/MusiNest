@@ -2,10 +2,132 @@ import * as FileSystem from "expo-file-system";
 import MusicInfo from "./MusicInfo";
 import * as MediaLibrary from "expo-media-library";
 import { SongData } from "./types";
+import {
+  checkDatabase,
+  deleteSong,
+  getAllSongData,
+  InitDB,
+  insertSong,
+} from "./db";
+import { IntoSongsData } from "./utils";
+import { getAll } from "react-native-get-music-files";
 
-const SONGS_LIMIT = 20;
+const SONGS_LIMIT = 5;
 const CLEAR_ASYNC_STORAGE = false;
-const CLEAR_STORAGE = false;
+const CLEAR_STORAGE = true;
+
+export async function loadSongsData() {
+  const status = await checkDatabase();
+  if (status) {
+    console.log("in if");
+    const db_resp = await getAllSongData();
+    const medialib_resp = (
+      await MediaLibrary.getAssetsAsync({
+        first: Infinity,
+        mediaType: "audio",
+      })
+    ).assets.map((ass) => {
+      // filter out any asset not meeting criteria
+      // ex. min time of song = 30 sec
+      // files from some folder are disabled by the user
+      return ass;
+    });
+    console.log(db_resp.length, medialib_resp.length);
+    if (db_resp.length != medialib_resp.length) {
+      // some new songs are added/removed/both to device.
+      // added
+      if (medialib_resp.length > db_resp.length) {
+        // get added Songs
+        const aSet = new Set(db_resp.map((s) => s.url));
+        const addedSongs = medialib_resp.filter((s) => !aSet.has(s.uri));
+
+        // get metadata of those new entries
+        const metadatas = await Promise.all(
+          addedSongs.map(async (s) => {
+            return await MusicInfo.getMusicInfoAsync(s.uri, {
+              title: true,
+              artist: true,
+              album: true,
+              genre: true,
+              picture: true,
+            });
+          })
+        );
+
+        // combine db_resp + metadatas and return
+
+        const newSongsData = addedSongs
+          .map((asset, idx) =>
+            metadatas[idx] ? IntoSongsData(asset, metadatas[idx]) : undefined
+          )
+          .filter((s) => typeof s !== "undefined");
+
+        // insert new Songs into DB.
+        // db.insert(newSongsData);
+        newSongsData.forEach((s) => insertSong(s));
+
+        // return fresh result
+        const final = [...db_resp, ...newSongsData];
+
+        // can do sorting here as well
+        return final;
+      }
+      // deleted
+      else if (db_resp.length > medialib_resp.length) {
+        const aSet = new Set(medialib_resp.map((s) => s.uri));
+        const deletedSongs = db_resp.filter((s) => !aSet.has(s.url));
+
+        // delete the entries from the db
+        // db.delete(deletedSongs);
+        deletedSongs.map((s) => deleteSong(s.id));
+      }
+    }
+
+    return db_resp;
+  } else {
+    InitDB();
+    const medialib_resp = (
+      await MediaLibrary.getAssetsAsync({
+        first: Infinity,
+        mediaType: "audio",
+      })
+    ).assets.map((ass) => {
+      // filter out any asset not meeting criteria
+      // ex. min time of song = 30 sec
+      // files from some folder are disabled by the user
+      return ass;
+    });
+    console.log("got medis_resp, started lib_resp");
+    const st = performance.now();
+    const lib_resp = await getAll({
+      limit: (
+        await MediaLibrary.getAssetsAsync({
+          first: Infinity,
+          mediaType: "audio",
+        })
+      ).totalCount,
+    });
+    console.log(`time: ${performance.now() - st} ms`);
+    console.log("got lib_resp", lib_resp.length, typeof lib_resp === "string");
+    if (typeof lib_resp === "string") {
+      // do something with the error
+      // return;
+      return new Error("got fucked");
+    }
+    // zip lib_resp & media_resp w.r.t url
+    const mediaMap = new Map(medialib_resp.map((ass) => [ass.uri, ass]));
+
+    const allSongsData = lib_resp.map((s) => {
+      const asset = mediaMap.get(`file://${s.url}`) as MediaLibrary.Asset;
+      return IntoSongsData(asset, s);
+    });
+
+    allSongsData.forEach((s) => insertSong(s));
+
+    console.log("finally", allSongsData.length);
+    return allSongsData;
+  }
+}
 
 // react-logo.png
 const FallbackImage =
@@ -62,6 +184,7 @@ export async function loadDataFromDisk() {
     let response = await MediaLibrary.getAssetsAsync({
       first: SONGS_LIMIT,
       mediaType: "audio",
+      // sortBy:
 
       after,
     });
@@ -90,18 +213,12 @@ export async function loadDataFromDisk() {
           artist: metadata.artist,
           duration: song.duration,
           artwork: metadata.picture?.pictureData || FallbackImage,
-          // Default image for a song (fallback)
-          // toDataURL("@/assets/images/react-logo.png", function (dataUrl) {
-          //   // console.log("RESULT:", dataUrl);
-          // }),
-          // (await FileSystem.readAsStringAsync(
-          //   "@/assets/images/react-logo.png"
-          // )),
           description:
             metadata.picture?.description ||
             `Default Description for ${song.filename}`,
           genre: metadata.genre,
           isLiked: false,
+          _index: -1,
         });
       } catch (err) {
         // file is not of mp3 format, so retrieving metadata fails.

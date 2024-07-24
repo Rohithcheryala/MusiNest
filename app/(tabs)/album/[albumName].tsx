@@ -11,7 +11,7 @@ import { Song } from "@/components/Song";
 const Album = () => {
   const { albumName } = useLocalSearchParams<{ albumName: string }>();
 
-  const [songIds, setSongIds] = useState<string[] | undefined>([]);
+  const [songIds, setSongIds] = useState<string[]>([]);
   const [songsList, setSongsList] = useState<SongData[]>([]);
   useEffect(() => {
     const fetchData = async () => {
