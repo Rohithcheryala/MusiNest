@@ -1,11 +1,12 @@
 import { View, Text, TouchableOpacity, Image, FlatList } from "react-native";
 import React, { useEffect, useState } from "react";
-import { getAllAlbumData, getAllSongData } from "@/lib/db";
+import { getAllAlbumData, getAllSongData, getSongDataById } from "@/lib/db";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AlbumsScreen() {
   const [data, setData] = useState<Map<string, string[]>>(new Map());
+
   useEffect(() => {
     const fetchAlbums = async () => {
       const dat = await getAllAlbumData();
@@ -17,6 +18,7 @@ export default function AlbumsScreen() {
     fetchAlbums();
     getAllSongData().then((res) => console.log(res?.length));
   }, []);
+
   return (
     <SafeAreaView className={`flex-1`}>
       <FlatList
@@ -28,13 +30,40 @@ export default function AlbumsScreen() {
             </View>
           );
         }}
-        renderItem={(item) => <Album name={item.item[0]} onclick={() => {}} />}
+        renderItem={(item) => (
+          <Album
+            name={item.item[0]}
+            song_ids={item.item[1]}
+            onclick={() => {}}
+          />
+        )}
       />
     </SafeAreaView>
   );
 }
 
-const Album = ({ name, onclick }: { name: string; onclick: Function }) => {
+const Album = ({
+  name,
+  song_ids,
+  onclick,
+}: {
+  name: string;
+  song_ids: string[];
+  onclick: Function;
+}) => {
+  const [albumArt, setAlbumArt] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    async function fetchAlbumArt() {
+      const song = await getSongDataById(song_ids[0]);
+      if (song) {
+        setAlbumArt(song.artwork);
+      }
+    }
+
+    fetchAlbumArt();
+  }, []);
+
   return (
     <TouchableOpacity
       onPress={() =>
@@ -49,12 +78,10 @@ const Album = ({ name, onclick }: { name: string; onclick: Function }) => {
     >
       <View className="flex items-center mr-3">
         {/* TODO - change contition & add image */}
-        {false ? (
+        {albumArt ? (
           <Image
             className="w-14 h-14 rounded-lg"
-            // source={{ uri: data?.artwork }}
-            // src={data.artwork}
-            source={require("@/assets/images/react-logo.png")}
+            source={{ uri: albumArt }}
             alt="Album Art"
           />
         ) : (

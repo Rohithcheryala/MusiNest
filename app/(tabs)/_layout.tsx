@@ -15,8 +15,35 @@ import {
 } from "@expo/vector-icons";
 import { colors } from "@/constants/tokens";
 
+import {
+  MaterialTopTabNavigationEventMap,
+  MaterialTopTabNavigationOptions,
+  createMaterialTopTabNavigator,
+} from "@react-navigation/material-top-tabs";
+import { withLayoutContext } from "expo-router";
+import { ParamListBase, TabNavigationState } from "@react-navigation/native";
+
+const { Navigator } = createMaterialTopTabNavigator();
+
+export const MaterialTopTabs = withLayoutContext<
+  MaterialTopTabNavigationOptions,
+  typeof Navigator,
+  TabNavigationState<ParamListBase>,
+  MaterialTopTabNavigationEventMap
+>(Navigator);
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+
+  // return (
+  //   <MaterialTopTabs>
+  //     <MaterialTopTabs.Screen name="index" options={{ title: "Tab One" }} />
+  //     <MaterialTopTabs.Screen
+  //       name="favourites"
+  //       options={{ title: "Tab Two" }}
+  //     />
+  //   </MaterialTopTabs>
+  // );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "black" }}>

@@ -42,7 +42,7 @@ export type SongData = {
   artist?: string;
   /* duration in seconds */
   duration?: number;
-  /* image data */
+  /* image url only[not data] */
   artwork: string;
   /* image description */
   description?: string;

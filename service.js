@@ -18,7 +18,11 @@ module.exports = async function () {
   });
   TrackPlayer.addEventListener("remote-previous", () => {
     console.log(`remote-previous`);
-
     TrackPlayer.skipToPrevious();
+  });
+  // song is paused even when a notification interupts...!!!
+  TrackPlayer.addEventListener("remote-duck", () => {
+    console.log(`remote-duck`);
+    TrackPlayer.pause();
   });
 };

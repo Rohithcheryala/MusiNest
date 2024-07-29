@@ -11,6 +11,10 @@ import "react-native-reanimated";
 import PermissionChecker from "@/lib/PermissionChecker";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import TrackPlayer from "react-native-track-player";
+import { SetupTrackPlayer } from "@/lib/Player";
+import { InitDB, saveCurrentSong, saveQueue } from "@/lib/db";
+import { CreateImagesDir } from "@/lib/utils";
+import { AppState, AppStateStatus } from "react-native";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -28,6 +32,27 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  useEffect(() => {
+    console.log(
+      "running---------------------------------------------------------------"
+    );
+    SetupTrackPlayer();
+    CreateImagesDir();
+
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (nextAppState === "background" || nextAppState === "inactive") {
+        const queue = await TrackPlayer.getQueue();
+        const currentTrackId = await TrackPlayer.getCurrentTrack();
+        const currentTrack = queue.find((track) => track.id === currentTrackId);
+
+        saveQueue(queue);
+        if (currentTrack) saveCurrentSong(currentTrack);
+      }
+    };
+
+    AppState.addEventListener("change", handleAppStateChange);
+  }, []);
 
   if (!loaded) {
     return null;

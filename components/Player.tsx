@@ -1,5 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, Modal } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  Modal,
+  StyleSheet,
+  Dimensions,
+} from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   FontAwesome,
@@ -13,19 +21,15 @@ import TrackPlayer, {
   usePlaybackState,
   useProgress,
   RepeatMode,
+  State,
+  PlaybackState,
 } from "react-native-track-player";
 import MusicInfo from "@/lib/MusicInfo";
 import Slider from "@react-native-community/slider";
+import { Slider as JsSlider } from "@miblanchard/react-native-slider";
 import { getSongDataById, toggleLikedTrack } from "@/lib/db";
 import { SongData } from "@/lib/types";
 import { MovingText } from "@/components/MovingText";
-
-const formatMillisecondsToMinutes = (totalMilliseconds: number) => {
-  const totalSeconds = Math.floor(totalMilliseconds / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = (totalSeconds % 60).toFixed(0).padStart(2, "0");
-  return `${minutes.toString().padStart(2, "0")}:${seconds}`;
-};
 
 interface PlayerScreenProps {
   isVisible: boolean;
@@ -38,16 +42,11 @@ const PlayerScreen: React.FC<PlayerScreenProps> = ({
   onClose,
   currentTrack,
 }) => {
-  const [sliderValue, setSliderValue] = useState<number>(0);
-  const [isSeeking, setIsSeeking] = useState<boolean>(false);
   const [isOptionsVisible, setIsOptionsVisible] = useState<boolean>(false);
   const [pictureData, setPictureData] = useState<string>();
   const [trackData, setTrackData] = useState<SongData>();
   const [isLikedToggled, setIsLikedToggled] = useState(false);
   const [isRepeatMode, setIsRepeatMode] = useState<boolean>(false);
-
-  const playbackState = usePlaybackState();
-  const progress = useProgress();
 
   const handleLikedTracks = async (id: string) => {
     await toggleLikedTrack(id);
@@ -65,10 +64,8 @@ const PlayerScreen: React.FC<PlayerScreenProps> = ({
         if (!data) {
           const data = await getSongDataById(currentTrack.id);
           setTrackData(data);
-          // console.log(data);
         } else {
           setTrackData(data); // Set the fetched song data
-          // console.log(data);
         }
       }
     };
@@ -96,61 +93,6 @@ const PlayerScreen: React.FC<PlayerScreenProps> = ({
     getPictureData();
   }, [currentTrack]);
 
-  useEffect(() => {
-    if (!isSeeking) {
-      setSliderValue(progress.position);
-    }
-  }, [progress.position]);
-
-  const play = async () => {
-    try {
-      await TrackPlayer.play();
-      console.log("Playing track");
-    } catch (error) {
-      console.error("Error playing track:", error);
-    }
-  };
-
-  const pause = async () => {
-    try {
-      await TrackPlayer.pause();
-      console.log("Pausing track");
-    } catch (error) {
-      console.error("Error pausing track:", error);
-    }
-  };
-
-  const nextTrack = async () => {
-    try {
-      await TrackPlayer.skipToNext();
-      console.log("Skipping to next track");
-    } catch (error) {
-      console.error("Error skipping to next track:", error);
-    }
-  };
-
-  const previousTrack = async () => {
-    try {
-      await TrackPlayer.skipToPrevious();
-      console.log("Skipping to previous track");
-    } catch (error) {
-      console.error("Error skipping to previous track:", error);
-    }
-  };
-
-  const handleSliderChange = (value: number) => {
-    setSliderValue(value);
-  };
-
-  const handleSliderComplete = async (value: number) => {
-    setIsSeeking(false);
-    await TrackPlayer.seekTo(value);
-  };
-
-  const handleSliderStart = () => {
-    setIsSeeking(true);
-  };
-
   const toggleRepeatMode = () => {
     setIsRepeatMode(!isRepeatMode); // Toggle repeat mode
     if (isRepeatMode) {
@@ -175,130 +117,15 @@ const PlayerScreen: React.FC<PlayerScreenProps> = ({
       transparent={false}
       onRequestClose={onClose}
     >
-      <SafeAreaProvider className="flex-1">
-        <View className="flex-1 w-full bg-[#0F0F0F]">
-          <View className="flex-row justify-between items-center p-4 pt-14">
-            <TouchableOpacity onPress={onClose}>
-              <Ionicons name="chevron-down" size={30} color="white" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setIsOptionsVisible(true)}>
-              <MaterialCommunityIcons
-                name="dots-vertical"
-                size={24}
-                color="white"
-              />
-            </TouchableOpacity>
-          </View>
-          <View className="flex-1 justify-center items-center">
-            <View className="w-full h-1/2 overflow-hidden rounded-xl justify-center items-center mb-6">
-              {pictureData ? (
-                <Image
-                  source={{ uri: pictureData }}
-                  style={{
-                    width: "90%",
-                    height: "100%",
-                    borderRadius: 20,
-                  }}
-                  alt="Album Art"
-                  resizeMode="contain"
-                />
-              ) : (
-                <Image
-                  source={require("@/assets/images/react-logo.png")}
-                  style={{
-                    width: "90%",
-                    height: "100%",
-                    borderRadius: 20,
-                    backgroundColor: "white",
-                  }}
-                  alt="Album Art"
-                  resizeMode="contain"
-                />
-              )}
-            </View>
-            <View className="w-full flex flex-row justify-between mb-6">
-              <View className="w-[10%] flex justify-center items-center">
-                <TouchableOpacity onPress={toggleRepeatMode}>
-                  <MaterialCommunityIcons
-                    name={isRepeatMode ? "repeat-off" : "repeat"}
-                    size={30}
-                    color={isRepeatMode ? "#1DB954" : "white"}
-                  />
-                </TouchableOpacity>
-              </View>
-              <View className="w-[70%] ml-1 overflow-auto pt-4">
-                <MovingText
-                  text={
-                    currentTrack?.title?.replace(".mp3", "") ||
-                    currentTrack?.filename.replace(".mp3", "") ||
-                    ""
-                  }
-                  animationThreshold={30}
-                  widthFraction={0.7}
-                  style={{ color: "white", fontSize: 26 }}
-                />
-                <Text
-                  className="text-white text-base mt-2"
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {currentTrack?.artist}
-                </Text>
-              </View>
-              <View className="w-[10%] flex justify-center items-center">
-                <TouchableOpacity
-                  onPress={() => handleLikedTracks(trackData?.id)}
-                >
-                  {trackData?.isLiked ? (
-                    <FontAwesome name="heart" size={25} color="white" />
-                  ) : (
-                    <FontAwesome name="heart-o" size={25} color="white" />
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View className="flex flex-row items-center w-3/4 mb-6">
-              <Text className="text-white text-xs">
-                {formatMillisecondsToMinutes(progress.position * 1000)}
-              </Text>
-              <Slider
-                style={{ flex: 1, marginHorizontal: 10 }}
-                minimumValue={0}
-                maximumValue={progress.duration}
-                value={sliderValue}
-                minimumTrackTintColor="#1DB954"
-                maximumTrackTintColor="#ffffff"
-                thumbTintColor="#1DB954"
-                onValueChange={handleSliderChange}
-                onSlidingStart={handleSliderStart}
-                onSlidingComplete={handleSliderComplete}
-              />
-              <Text className="text-white text-xs">
-                {formatMillisecondsToMinutes(progress.duration * 1000)}
-              </Text>
-            </View>
-
-            <View className="flex flex-row justify-between w-3/4">
-              <TouchableOpacity onPress={previousTrack} className="mr-4 p-3">
-                <FontAwesome6 name="backward" size={40} color="white" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={playbackState.state === "playing" ? pause : play}
-                className="mx-4  p-3"
-              >
-                <FontAwesome6
-                  name={playbackState.state === "playing" ? "pause" : "play"}
-                  size={40}
-                  color="white"
-                />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={nextTrack} className="ml-4 p-3">
-                <FontAwesome6 name="forward" size={40} color="white" />
-              </TouchableOpacity>
-            </View>
-          </View>
+      <SafeAreaProvider className="flex-1 bg-[#0F0F0F]">
+        {/* <View className="flex-1 w-full bg-[#0F0F0F]"> */}
+        <TopShelf onClose={onClose} setIsOptionsVisible={setIsOptionsVisible} />
+        <View className="flex-1 p-6 ">
+          <SongDetails currentTrack={currentTrack} />
+          <PlayerSlider />
+          <PlayerControls currentSong={trackData} />
         </View>
+        {/* </View> */}
       </SafeAreaProvider>
       {isOptionsVisible && (
         <TrackOptions
@@ -312,3 +139,234 @@ const PlayerScreen: React.FC<PlayerScreenProps> = ({
 };
 
 export default PlayerScreen;
+
+const formatTime = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
+};
+
+const PlayerSlider = () => {
+  const progress = useProgress();
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seek, setSeek] = useState(0);
+
+  const handleValueChange = (value: number[]) => {
+    // console.log(`val -> ${value}`);
+    setIsSeeking(true);
+    setSeek(value[0]);
+  };
+
+  const handleSlidingComplete = (value: number[]) => {
+    setIsSeeking(false);
+    TrackPlayer.seekTo(value[0]);
+  };
+
+  useEffect(() => {
+    setIsSeeking(false);
+  }, [progress.position]);
+
+  return (
+    <View className="w-full">
+      <View className="py-2 ">
+        <View className="h-5">
+          <JsSlider
+            containerStyle={{ flex: 1 /* height: 40 */ }}
+            trackStyle={{
+              padding: 0,
+              backgroundColor: "white",
+              // marginHorizontal: 10,
+              // borderCurve: "circular",
+              // borderRadius: 4,
+            }}
+            thumbStyle={{
+              height: 10,
+              width: 10,
+              // borderCurve: "circular",
+              // borderRadius: 100,
+              // translateY: 6,
+            }}
+            value={isSeeking ? seek : progress.position}
+            minimumValue={0}
+            maximumValue={progress.duration}
+            onValueChange={handleValueChange}
+            onSlidingComplete={handleSlidingComplete}
+            minimumTrackTintColor="#800080" // Purple color
+            // maximumTrackTintColor="#ffffff" // White color
+            thumbTintColor="#1DB954"
+            // thumbTouchSize={{ width: 40, height: 40 }}
+          />
+        </View>
+        <View className="flex flex-row  w-full items-center justify-between ">
+          <Text className="text-white text-sm">
+            {formatTime(isSeeking ? seek : progress.position)}
+          </Text>
+
+          <Text className="text-white text-sm">
+            {formatTime(progress.duration)}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const PlayerControls = ({ currentSong }: { currentSong: SongData }) => {
+  const playbackState: PlaybackState = usePlaybackState() as PlaybackState;
+  const [currentPlaybackState, setCurrentPlaybackState] = useState<
+    State | undefined
+  >(playbackState.state);
+  const [isLikedToggled, setIsLikedToggled] = useState(false);
+  const [isRepeatMode, setIsRepeatMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (
+      playbackState.state !== undefined &&
+      playbackState.state !== State.Buffering &&
+      playbackState.state !== State.Ready &&
+      playbackState.state !== State.Loading
+    ) {
+      setCurrentPlaybackState(playbackState.state);
+    }
+  }, [playbackState.state]);
+
+  const previousTrack = async () => {
+    await TrackPlayer.skipToPrevious();
+  };
+
+  const play = async () => {
+    await TrackPlayer.play();
+  };
+
+  const pause = async () => {
+    await TrackPlayer.pause();
+  };
+
+  const nextTrack = async () => {
+    await TrackPlayer.skipToNext();
+  };
+
+  const toggleRepeatMode = () => {
+    setIsRepeatMode(!isRepeatMode); // Toggle repeat mode
+    if (isRepeatMode) {
+      TrackPlayer.setRepeatMode(RepeatMode.Off);
+    } else {
+      TrackPlayer.setRepeatMode(RepeatMode.Track);
+    }
+  };
+
+  const handleLikedTracks = async (id: string) => {
+    await toggleLikedTrack(id);
+    setIsLikedToggled((prev) => !prev); // Toggle the state to trigger useEffect
+  };
+
+  return (
+    <View className="flex flex-row justify-between items-center py-2 w-full">
+      {/* replay */}
+      <TouchableOpacity className="p-1" onPress={toggleRepeatMode}>
+        <MaterialCommunityIcons
+          name={isRepeatMode ? "repeat-off" : "repeat"}
+          size={40}
+          color={isRepeatMode ? "#1DB954" : "white"}
+        />
+      </TouchableOpacity>
+
+      {/* previous */}
+      <TouchableOpacity className="p-1" onPress={previousTrack}>
+        <FontAwesome6 name="backward" size={40} color="white" />
+      </TouchableOpacity>
+
+      {/* play/pause */}
+      <TouchableOpacity
+        onPress={currentPlaybackState === State.Playing ? pause : play}
+        className="p-1 px-3"
+      >
+        <FontAwesome6
+          name={currentPlaybackState === State.Playing ? "pause" : "play"}
+          size={60}
+          color="white"
+        />
+      </TouchableOpacity>
+
+      {/* next */}
+      <TouchableOpacity onPress={nextTrack} className="p-1">
+        <FontAwesome6 name="forward" size={40} color="white" />
+      </TouchableOpacity>
+
+      {/* liked */}
+      <TouchableOpacity
+        className="p-1"
+        onPress={() => handleLikedTracks(currentSong.id)}
+      >
+        {currentSong.isLiked ? (
+          <FontAwesome name="heart" size={40} color="red" />
+        ) : (
+          <FontAwesome name="heart-o" size={40} color="white" />
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+function SongDetails({ currentTrack }: { currentTrack: Track }) {
+  return (
+    <View className="w-full overflow-hidden rounded-xl  justify-center mb-6">
+      <View className="mx-auto py-6">
+        <Image
+          source={{ uri: currentTrack.artwork }}
+          style={{
+            width: "100%",
+            // height: "100%",
+            aspectRatio: 1,
+            borderRadius: 20,
+            backgroundColor: "white",
+          }}
+          alt="Album Art"
+          resizeMode="stretch"
+        />
+      </View>
+
+      <View className="flex flex-row justify-between">
+        <View className="">
+          <Text className="text-xl font-bold text-white">
+            {currentTrack?.title?.replace(".mp3", "") ||
+              currentTrack?.filename.replace(".mp3", "") ||
+              ""}
+          </Text>
+          <Text
+            className="text-white text-base mt-2"
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {currentTrack?.artist}
+          </Text>
+        </View>
+        <View>
+          {/* add to playlist button */}
+          <TouchableOpacity onPress={() => {}} className="p-1 px-3">
+            <FontAwesome6 name={"play"} size={60} color="white" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function TopShelf({
+  onClose,
+  setIsOptionsVisible,
+}: {
+  onClose: () => void;
+  setIsOptionsVisible: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  return (
+    <View className="flex-row justify-between  items-center p-4 ">
+      <TouchableOpacity onPress={onClose}>
+        <Ionicons name="chevron-down" size={30} color="white" />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => setIsOptionsVisible(true)}>
+        <MaterialCommunityIcons name="dots-vertical" size={24} color="white" />
+      </TouchableOpacity>
+    </View>
+  );
+}

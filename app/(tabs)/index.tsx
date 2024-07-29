@@ -9,8 +9,8 @@ import {
 } from "@/lib/data";
 import { FlashList } from "@shopify/flash-list";
 import TrackPlayer from "react-native-track-player";
-import { setupPlayer } from "@/TrackPlayerServices";
-import { checkDatabase, InitDB, getAllSongData, insertSong } from "@/lib/db";
+import { SetupTrackPlayer } from "@/lib/Player";
+import { CheckDbAndInit, InitDB, getAllSongData, insertSong } from "@/lib/db";
 import { SongData } from "@/lib/types";
 import { shuffle } from "@/lib/methods";
 import { Song } from "@/components/Song";
@@ -38,15 +38,14 @@ export default function HomeScreen() {
     }
 
     async function fetch() {
-      const status = await checkDatabase();
+      const status = await CheckDbAndInit();
       console.log("the status is ", status);
-      setupPlayer();
+      SetupTrackPlayer();
       console.log(`fetching songs`);
       const res: SongData[] = await loadDataFromDisk();
       setSongsList(res);
       console.log("lnght", res.length);
       try {
-        await InitDB();
         for (const r of res) {
           console.log("whyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
           insertSong(r);
@@ -75,6 +74,11 @@ export default function HomeScreen() {
           <Song
             data={item}
             onclick={() => {
+              console.log(
+                "clicked",
+                typeof item.artwork,
+                item.artwork.slice(0, 50)
+              );
               const songIndex = songsList.findIndex(
                 (song) => song.id === item.id
               );
@@ -88,15 +92,15 @@ export default function HomeScreen() {
               const cur = list.splice(songIndex, 1); // removing cur song from list
               const shuffled = shuffle(list);
               const q: SongData[] = [...cur, ...shuffled]; // adding cur in front
-              console.log("shuffled");
+              // console.log("shuffled");
               for (const a of q) {
-                console.log(a.filename, a.artwork.length);
+                // console.log(a.filename, a.artwork.length);
               }
               TrackPlayer.setQueue(q).then(() => {
                 TrackPlayer.play();
                 TrackPlayer.getQueue().then((q) => {
-                  console.log(`Queue is`);
-                  console.log(q);
+                  // console.log(`Queue is`);
+                  // console.log(q);
                 });
               });
             }}

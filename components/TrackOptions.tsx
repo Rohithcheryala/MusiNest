@@ -22,6 +22,7 @@ import { getAllPlaylists, getSongDataById, toggleLikedTrack } from "@/lib/db";
 import Playlists from "./Playlists";
 import TrackPlayer from "react-native-track-player";
 import ArtistAndAlbum from "./ArtistAndAlbum";
+import { router } from "expo-router";
 
 type OptionsModalProps = {
   isVisible: boolean;
@@ -242,9 +243,16 @@ const TrackOptions: React.FC<OptionsModalProps> = ({
                 <TouchableOpacity
                   className="py-2 mt-3"
                   onPress={() => {
-                    setShowAlbumAndArtist(true);
-                    setAlbumOrArtist("album");
+                    // setShowAlbumAndArtist(true);
+                    // setAlbumOrArtist("album");
                     // onClose();
+                    console.log(`pushing "/album/${trackData.album}"`);
+                    router.push({
+                      pathname: "/album/[albumName]",
+                      params: {
+                        albumName: trackData.album,
+                      },
+                    });
                   }}
                 >
                   <View className="flex flex-row items-center pb-3 border-b border-gray-600">
@@ -294,14 +302,14 @@ const TrackOptions: React.FC<OptionsModalProps> = ({
           // playlists={playlists}
         />
       )}
-      {showAlbumAndArtist && (
+      {/* {showAlbumAndArtist && (
         <ArtistAndAlbum
           isVisible={showAlbumAndArtist}
           onClose={() => setShowAlbumAndArtist(false)}
           track={trackData}
           type={albumOrArtist}
         />
-      )}
+      )} */}
     </Modal>
   );
 };

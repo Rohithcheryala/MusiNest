@@ -3,13 +3,13 @@ import MusicInfo from "./MusicInfo";
 import * as MediaLibrary from "expo-media-library";
 import { SongData } from "./types";
 import {
-  checkDatabase,
+  CheckDbAndInit,
   deleteSong,
   getAllSongData,
   InitDB,
   insertSong,
 } from "./db";
-import { IntoSongsData } from "./utils";
+import { CreateImagesDir, IntoSongsData, SaveImageToFileSystem } from "./utils";
 import { getAll } from "react-native-get-music-files";
 
 const SONGS_LIMIT = 5;
@@ -17,7 +17,7 @@ const CLEAR_ASYNC_STORAGE = false;
 const CLEAR_STORAGE = true;
 
 export async function loadSongsData() {
-  const status = await checkDatabase();
+  const status = await CheckDbAndInit();
   if (status) {
     console.log("in if");
     const db_resp = await getAllSongData();
@@ -56,11 +56,20 @@ export async function loadSongsData() {
 
         // combine db_resp + metadatas and return
 
-        const newSongsData = addedSongs
-          .map((asset, idx) =>
-            metadatas[idx] ? IntoSongsData(asset, metadatas[idx]) : undefined
+        const newSongsData = (
+          await Promise.all(
+            addedSongs.map(async (asset, idx) => {
+              if (metadatas[idx] && metadatas[idx].picture?.pictureData) {
+                await SaveImageToFileSystem(
+                  metadatas[idx].picture.pictureData,
+                  `${asset.id}.jpeg`,
+                  "jpeg"
+                );
+                return IntoSongsData(asset, metadatas[idx]);
+              }
+            })
           )
-          .filter((s) => typeof s !== "undefined");
+        ).filter((s) => typeof s !== "undefined");
 
         // insert new Songs into DB.
         // db.insert(newSongsData);
@@ -85,7 +94,6 @@ export async function loadSongsData() {
 
     return db_resp;
   } else {
-    InitDB();
     const medialib_resp = (
       await MediaLibrary.getAssetsAsync({
         first: Infinity,
@@ -100,15 +108,16 @@ export async function loadSongsData() {
     console.log("got medis_resp, started lib_resp");
     const st = performance.now();
     const lib_resp = await getAll({
-      limit: (
-        await MediaLibrary.getAssetsAsync({
-          first: Infinity,
-          mediaType: "audio",
-        })
-      ).totalCount,
+      // limit: (
+      //   await MediaLibrary.getAssetsAsync({
+      //     first: Infinity,
+      //     mediaType: "audio",
+      //   })
+      // ).totalCount,
+      limit: 20,
     });
     console.log(`time: ${performance.now() - st} ms`);
-    console.log("got lib_resp", lib_resp.length, typeof lib_resp === "string");
+    // console.log("got lib_resp", lib_resp.length, typeof lib_resp === "string");
     if (typeof lib_resp === "string") {
       // do something with the error
       // return;
@@ -117,10 +126,15 @@ export async function loadSongsData() {
     // zip lib_resp & media_resp w.r.t url
     const mediaMap = new Map(medialib_resp.map((ass) => [ass.uri, ass]));
 
-    const allSongsData = lib_resp.map((s) => {
-      const asset = mediaMap.get(`file://${s.url}`) as MediaLibrary.Asset;
-      return IntoSongsData(asset, s);
-    });
+    const it = performance.now();
+    console.log("create img start");
+    const allSongsData = await Promise.all(
+      lib_resp.map(async (s) => {
+        const asset = mediaMap.get(`file://${s.url}`) as MediaLibrary.Asset;
+        return IntoSongsData(asset, s);
+      })
+    );
+    console.log("create image end -", performance.now() - it, "ms");
 
     allSongsData.forEach((s) => insertSong(s));
 

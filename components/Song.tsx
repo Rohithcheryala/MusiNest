@@ -35,20 +35,13 @@ export const Song = ({
         className="p-3 flex-row items-center"
       >
         <View className="flex items-center mr-3">
-          {data.artwork ? (
-            <Image
-              className="w-14 h-14 rounded-lg"
-              // source={{ uri: data?.artwork }}
-              src={data.artwork}
-              alt="Album Art"
-            />
-          ) : (
-            <Image
-              className="w-14 h-14 rounded-lg bg-white"
-              source={require("@/assets/images/react-logo.png")}
-              alt="Album Art"
-            />
-          )}
+          <Image
+            className="w-14 h-14 rounded-lg"
+            // source={{ uri: data.artwork.slice(7) }}
+            source={{ uri: data.artwork }}
+            // src={data.artwork}
+            alt="Album Art"
+          />
         </View>
         <View className="flex-1 mr-3">
           <Text

@@ -87,7 +87,7 @@ export const FloatingPlayer = () => {
         setData(songData); // Set the fetched song data
       }
     } else {
-      console.log("no track data");
+      // console.log("no track data");
     }
   };
   useEffect(() => {
