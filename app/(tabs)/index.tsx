@@ -7,6 +7,7 @@ import {
   loadDataFromFileSystemOnePerSong,
   loadSongsData,
   loadSongsDataFinal,
+  syncSongsData,
 } from "@/lib/data";
 import { FlashList } from "@shopify/flash-list";
 import TrackPlayer from "react-native-track-player";
@@ -16,9 +17,12 @@ import { SongData } from "@/lib/types";
 import { shuffle } from "@/lib/methods";
 import { Song } from "@/components/Song";
 import * as MediaLibrary from "expo-media-library";
+import { useMusicPlayerContext } from "@/context/PlayerContext";
+import * as FileSystem from "expo-file-system";
 
 export default function HomeScreen() {
   const [songsList, setSongsList] = useState<SongData[]>([]);
+  const ctx = useMusicPlayerContext();
 
   // fetch songs
   useEffect(() => {
@@ -30,7 +34,7 @@ export default function HomeScreen() {
         } else if (resp === undefined) {
           console.warn("No songs data available");
         } else {
-          setSongsList(resp);
+          ctx.setAllTracks(resp);
           console.log(resp.length);
         }
       } catch (error) {
@@ -44,7 +48,7 @@ export default function HomeScreen() {
       SetupTrackPlayer();
       console.log(`fetching songs`);
       const res: SongData[] = await loadDataFromDisk();
-      setSongsList(res);
+      ctx.setAllTracks(res);
       console.log("lnght", res.length);
       try {
         for (const r of res) {
@@ -58,13 +62,38 @@ export default function HomeScreen() {
       }
     }
 
-    fetch2();
+    async function fetchData() {
+      try {
+        const resp = await loadSongsDataFinal();
+        for (let s of resp as SongData[]) {
+          FileSystem.getInfoAsync(s.artwork).then((sy) => {
+            console.log(`${s.artwork} -> ${sy.exists}`);
+          });
+        }
+        if (resp instanceof Error) {
+          console.error("Error loading songs:", resp.message);
+          return;
+        } else if (resp === undefined) {
+          console.warn("No songs data available");
+          return;
+        } else {
+          ctx.setAllTracks(resp);
+        }
+        const synced = await syncSongsData(resp);
+        console.log("synced.");
+        ctx.setAllTracks(synced);
+      } catch (err) {
+        console.log("err ->", err);
+      }
+    }
+
+    fetchData();
   }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-700">
       <FlashList
-        data={songsList}
+        data={ctx.allTracks}
         keyExtractor={(item, index) => `${index}`}
         estimatedItemSize={500}
         scrollIndicatorInsets={{ right: 1 }}
@@ -80,7 +109,10 @@ export default function HomeScreen() {
                 typeof item.artwork,
                 item.artwork.slice(0, 50)
               );
-              const songIndex = songsList.findIndex(
+              MediaLibrary.getAssetInfoAsync(item.artwork).then((s) =>
+                console.log(s)
+              );
+              const songIndex = ctx.allTracks.findIndex(
                 (song) => song.id === item.id
               );
               console.log(songIndex);
@@ -89,7 +121,7 @@ export default function HomeScreen() {
                 return;
               }
 
-              const list = [...songsList]; // copy of list
+              const list = [...ctx.allTracks]; // copy of list
               const cur = list.splice(songIndex, 1); // removing cur song from list
               const shuffled = shuffle(list);
               const q: SongData[] = [...cur, ...shuffled]; // adding cur in front

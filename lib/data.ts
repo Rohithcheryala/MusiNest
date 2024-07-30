@@ -29,6 +29,7 @@ export async function loadSongsDataFinal() {
     // files from some folder are disabled by the user
     return ass;
   });
+
   if (db_resp.length !== 0) {
     // has some songs already
     return db_resp;
@@ -36,13 +37,13 @@ export async function loadSongsDataFinal() {
     //
     const st = performance.now();
     const lib_resp = await getAll({
-      // limit: (
-      //   await MediaLibrary.getAssetsAsync({
-      //     first: Infinity,
-      //     mediaType: "audio",
-      //   })
-      // ).totalCount,
-      limit: 20,
+      limit: (
+        await MediaLibrary.getAssetsAsync({
+          first: Infinity,
+          mediaType: "audio",
+        })
+      ).totalCount,
+      // limit: 20,
     });
     console.log(`time: ${performance.now() - st} ms`);
     if (typeof lib_resp === "string") {
@@ -54,10 +55,12 @@ export async function loadSongsDataFinal() {
     // zip lib_resp & media_resp w.r.t url
     const mediaMap = new Map(medialib_resp.map((ass) => [ass.uri, ass]));
     const allSongsData = await Promise.all(
-      lib_resp.map(async (s) => {
-        const asset = mediaMap.get(`file://${s.url}`) as MediaLibrary.Asset;
-        return IntoSongsData(asset, s);
-      })
+      lib_resp
+        .filter((s) => s.url.endsWith(".mp3"))
+        .map(async (s) => {
+          const asset = mediaMap.get(`file://${s.url}`) as MediaLibrary.Asset;
+          return IntoSongsData(asset, s);
+        })
     );
 
     // TODO: background task
@@ -68,6 +71,7 @@ export async function loadSongsDataFinal() {
 }
 
 export async function syncSongsData(initialSongsData?: SongData[]) {
+  console.log("syncing data... .. .");
   if (!initialSongsData) {
     initialSongsData = (await loadSongsDataFinal()) as SongData[];
   }
@@ -83,15 +87,17 @@ export async function syncSongsData(initialSongsData?: SongData[]) {
     // files from some folder are disabled by the user
     return ass;
   });
-
+  console.log(`db = ${db_resp.length} , storage = ${medialib_resp.length}`);
   if (db_resp.length != medialib_resp.length) {
     // some new songs are added/removed/both to device.
     // added
     if (medialib_resp.length > db_resp.length) {
       // get added Songs
       const aSet = new Set(db_resp.map((s) => s.url));
-      const addedSongs = medialib_resp.filter((s) => !aSet.has(s.uri));
-
+      const addedSongs = medialib_resp.filter(
+        (s) => !aSet.has(s.uri) && s.uri.endsWith(".mp3")
+      );
+      addedSongs.forEach((s) => console.log(s.uri));
       // get metadata of those new entries
       const metadatas = await Promise.all(
         addedSongs.map(async (s) => {
@@ -133,8 +139,12 @@ export async function syncSongsData(initialSongsData?: SongData[]) {
 
       // delete the entries from the db
       deletedSongs.map((s) => deleteSong(s.id));
+
+      return await getAllSongData();
     }
   }
+
+  return initialSongsData;
 }
 export async function loadSongsData() {
   const status = await CheckDbAndInit();

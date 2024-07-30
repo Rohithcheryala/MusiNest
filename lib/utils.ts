@@ -106,14 +106,6 @@ export async function IntoSongsData(
 }
 
 export async function CreateImagesDir(deleteIfPresent: boolean = DEV) {
-  if (deleteIfPresent) {
-    try {
-      await FileSystem.deleteAsync(IMAGES_DIR);
-    } catch (err) {
-      console.log("del err", err);
-    }
-  }
-
   try {
     await FileSystem.makeDirectoryAsync(IMAGES_DIR);
   } catch {}

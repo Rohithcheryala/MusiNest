@@ -69,14 +69,14 @@ export async function InitDB() {
       );`
   );
 
-  // await db.runAsync(
-  //   `CREATE TABLE IF NOT EXISTS Queue (
-  //       id TEXT PRIMARY KEY NOT NULL,
-  //       title TEXT NOT NULL,
-  //       artist TEXT NOT NULL,
-  //       url TEXT NOT NULL
-  //     );`
-  // );
+  await db.runAsync(
+    `CREATE TABLE IF NOT EXISTS Queue (
+        id TEXT PRIMARY KEY NOT NULL,
+        title TEXT NOT NULL,
+        artist TEXT NOT NULL,
+        url TEXT NOT NULL
+      );`
+  );
 
   await db.runAsync(
     `CREATE TABLE IF NOT EXISTS CurrentSong (
@@ -99,7 +99,6 @@ export async function getAllSongData(): Promise<SongData[]> {
   try {
     const data: SongData[] = await db.getAllAsync("SELECT * FROM Songs");
     if (DEV) console.log(`Song data length: ${data.length}`);
-
     return data;
   } catch (error) {
     console.log("Error fetching all songs data!!! ", error);

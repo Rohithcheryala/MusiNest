@@ -17,6 +17,7 @@ import {
 import { SongData } from "@/lib/types";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { FlashList } from "@shopify/flash-list";
 
 const PlayListScreen = () => {
   const router = useRouter();
@@ -78,7 +79,7 @@ const PlayListScreen = () => {
 
   return (
     <SafeAreaView className={`flex-1 p-4 mb-32`}>
-      <FlatList
+      <FlashList
         ListEmptyComponent={() => (
           <View className="flex items-center justify-center">
             <Text className="text-white mb-4">No playlists found</Text>

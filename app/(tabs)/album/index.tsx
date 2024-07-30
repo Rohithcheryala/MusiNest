@@ -38,6 +38,7 @@ export default function AlbumsScreen() {
             onclick={() => {}}
           />
         )}
+        estimatedItemSize={20}
       />
     </SafeAreaView>
   );
@@ -78,7 +79,6 @@ const Album = ({
       className="p-3 flex-row items-center"
     >
       <View className="flex items-center mr-3">
-        {/* TODO - change contition & add image */}
         {albumArt ? (
           <Image
             className="w-14 h-14 rounded-lg"

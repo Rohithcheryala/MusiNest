@@ -7,6 +7,7 @@ import { SongData } from "@/lib/types";
 import TrackPlayer from "react-native-track-player";
 import { shuffle } from "@/lib/methods";
 import { Song } from "@/components/Song";
+import { FlashList } from "@shopify/flash-list";
 
 const Album = () => {
   const { albumName } = useLocalSearchParams<{ albumName: string }>();
@@ -30,7 +31,7 @@ const Album = () => {
 
   return (
     <SafeAreaView className="">
-      <FlatList
+      <FlashList
         data={songsList}
         ListHeaderComponent={() => (
           <Text className="text-white text-4xl">Album: {albumName}</Text>
@@ -67,6 +68,7 @@ const Album = () => {
             />
           );
         }}
+        estimatedItemSize={5}
       />
     </SafeAreaView>
   );
