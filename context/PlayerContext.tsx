@@ -41,7 +41,7 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
-export const useContext2 = () => {
+export const useMusicPlayerContext = () => {
   const context = useContext(MusicPlayerContext);
   if (!context) {
     throw new Error("useMusicPlayer must be used within a MusicPlayerProvider");

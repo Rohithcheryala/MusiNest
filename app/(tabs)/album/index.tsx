@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { getAllAlbumData, getAllSongData, getSongDataById } from "@/lib/db";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { FlashList } from "@shopify/flash-list";
 
 export default function AlbumsScreen() {
   const [data, setData] = useState<Map<string, string[]>>(new Map());
@@ -21,7 +22,7 @@ export default function AlbumsScreen() {
 
   return (
     <SafeAreaView className={`flex-1`}>
-      <FlatList
+      <FlashList
         data={Array.from(data?.entries())}
         ListHeaderComponent={() => {
           return (

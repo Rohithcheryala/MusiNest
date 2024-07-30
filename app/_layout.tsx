@@ -12,8 +12,9 @@ import PermissionChecker from "@/lib/PermissionChecker";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import TrackPlayer from "react-native-track-player";
 import { SetupTrackPlayer } from "@/lib/Player";
-import { InitDB, saveCurrentSong, saveQueue } from "@/lib/db";
+import { CheckDbAndInit, InitDB, saveCurrentSong, saveQueue } from "@/lib/db";
 import { CreateImagesDir } from "@/lib/utils";
+import { MusicPlayerProvider } from "@/context/PlayerContext";
 import { AppState, AppStateStatus } from "react-native";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -34,24 +35,23 @@ export default function RootLayout() {
   }, [loaded]);
 
   useEffect(() => {
-    console.log(
-      "running---------------------------------------------------------------"
-    );
+    // must succeed functions
     SetupTrackPlayer();
     CreateImagesDir();
+    CheckDbAndInit();
 
-    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-      if (nextAppState === "background" || nextAppState === "inactive") {
-        const queue = await TrackPlayer.getQueue();
-        const currentTrackId = await TrackPlayer.getCurrentTrack();
-        const currentTrack = queue.find((track) => track.id === currentTrackId);
+    // const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+    //   if (nextAppState === "background" || nextAppState === "inactive") {
+    //     const queue = await TrackPlayer.getQueue();
+    //     const currentTrackId = await TrackPlayer.getActiveTrackIndex();
+    //     const currentTrack = queue.find((track) => track.id === currentTrackId);
 
-        saveQueue(queue);
-        if (currentTrack) saveCurrentSong(currentTrack);
-      }
-    };
+    //     saveQueue(queue);
+    //     if (currentTrack) saveCurrentSong(currentTrack);
+    //   }
+    // };
 
-    AppState.addEventListener("change", handleAppStateChange);
+    // AppState.addEventListener("change", handleAppStateChange);
   }, []);
 
   if (!loaded) {
@@ -61,10 +61,12 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <PermissionChecker>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
+        <MusicPlayerProvider>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+        </MusicPlayerProvider>
       </PermissionChecker>
     </ThemeProvider>
   );

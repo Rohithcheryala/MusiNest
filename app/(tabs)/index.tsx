@@ -6,6 +6,7 @@ import {
   loadDataFromDisk,
   loadDataFromFileSystemOnePerSong,
   loadSongsData,
+  loadSongsDataFinal,
 } from "@/lib/data";
 import { FlashList } from "@shopify/flash-list";
 import TrackPlayer from "react-native-track-player";
@@ -14,6 +15,7 @@ import { CheckDbAndInit, InitDB, getAllSongData, insertSong } from "@/lib/db";
 import { SongData } from "@/lib/types";
 import { shuffle } from "@/lib/methods";
 import { Song } from "@/components/Song";
+import * as MediaLibrary from "expo-media-library";
 
 export default function HomeScreen() {
   const [songsList, setSongsList] = useState<SongData[]>([]);
@@ -22,8 +24,7 @@ export default function HomeScreen() {
   useEffect(() => {
     async function fetch2() {
       try {
-        const resp = await loadSongsData();
-
+        const resp = await loadSongsDataFinal();
         if (resp instanceof Error) {
           console.error("Error loading songs:", resp.message);
         } else if (resp === undefined) {

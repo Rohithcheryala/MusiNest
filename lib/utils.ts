@@ -109,8 +109,6 @@ export async function CreateImagesDir(deleteIfPresent: boolean = DEV) {
   if (deleteIfPresent) {
     try {
       await FileSystem.deleteAsync(IMAGES_DIR);
-      console.log("info of img_dir");
-      console.log((await FileSystem.getInfoAsync(IMAGES_DIR)).exists);
     } catch (err) {
       console.log("del err", err);
     }

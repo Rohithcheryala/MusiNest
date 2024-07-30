@@ -16,9 +16,129 @@ const SONGS_LIMIT = 5;
 const CLEAR_ASYNC_STORAGE = false;
 const CLEAR_STORAGE = true;
 
+export async function loadSongsDataFinal() {
+  const db_resp = await getAllSongData();
+  const medialib_resp = (
+    await MediaLibrary.getAssetsAsync({
+      first: Infinity,
+      mediaType: "audio",
+    })
+  ).assets.map((ass) => {
+    // filter out any asset not meeting criteria
+    // ex. min time of song = 30 sec
+    // files from some folder are disabled by the user
+    return ass;
+  });
+  if (db_resp.length !== 0) {
+    // has some songs already
+    return db_resp;
+  } else {
+    //
+    const st = performance.now();
+    const lib_resp = await getAll({
+      // limit: (
+      //   await MediaLibrary.getAssetsAsync({
+      //     first: Infinity,
+      //     mediaType: "audio",
+      //   })
+      // ).totalCount,
+      limit: 20,
+    });
+    console.log(`time: ${performance.now() - st} ms`);
+    if (typeof lib_resp === "string") {
+      // do something with the error
+      // return;
+      return new Error("got fucked");
+    }
+
+    // zip lib_resp & media_resp w.r.t url
+    const mediaMap = new Map(medialib_resp.map((ass) => [ass.uri, ass]));
+    const allSongsData = await Promise.all(
+      lib_resp.map(async (s) => {
+        const asset = mediaMap.get(`file://${s.url}`) as MediaLibrary.Asset;
+        return IntoSongsData(asset, s);
+      })
+    );
+
+    // TODO: background task
+    allSongsData.forEach((s) => insertSong(s));
+
+    return allSongsData;
+  }
+}
+
+export async function syncSongsData(initialSongsData?: SongData[]) {
+  if (!initialSongsData) {
+    initialSongsData = (await loadSongsDataFinal()) as SongData[];
+  }
+  const db_resp = await getAllSongData();
+  const medialib_resp = (
+    await MediaLibrary.getAssetsAsync({
+      first: Infinity,
+      mediaType: "audio",
+    })
+  ).assets.map((ass) => {
+    // filter out any asset not meeting criteria
+    // ex. min time of song = 30 sec
+    // files from some folder are disabled by the user
+    return ass;
+  });
+
+  if (db_resp.length != medialib_resp.length) {
+    // some new songs are added/removed/both to device.
+    // added
+    if (medialib_resp.length > db_resp.length) {
+      // get added Songs
+      const aSet = new Set(db_resp.map((s) => s.url));
+      const addedSongs = medialib_resp.filter((s) => !aSet.has(s.uri));
+
+      // get metadata of those new entries
+      const metadatas = await Promise.all(
+        addedSongs.map(async (s) => {
+          return await MusicInfo.getMusicInfoAsync(s.uri, {
+            title: true,
+            artist: true,
+            album: true,
+            genre: true,
+            picture: true,
+          });
+        })
+      );
+
+      // combine db_resp + metadatas and return
+
+      const newSongsData = (
+        await Promise.all(
+          addedSongs.map(async (asset, idx) => {
+            if (metadatas[idx] && metadatas[idx].picture?.pictureData) {
+              return IntoSongsData(asset, metadatas[idx]);
+            }
+          })
+        )
+      ).filter((s) => typeof s !== "undefined");
+
+      // insert new Songs into DB.
+      newSongsData.forEach((s) => insertSong(s));
+
+      // return fresh result
+      const final = [...db_resp, ...newSongsData];
+
+      // can do sorting here as well
+      return final;
+    }
+    // deleted
+    else if (db_resp.length > medialib_resp.length) {
+      const aSet = new Set(medialib_resp.map((s) => s.uri));
+      const deletedSongs = db_resp.filter((s) => !aSet.has(s.url));
+
+      // delete the entries from the db
+      deletedSongs.map((s) => deleteSong(s.id));
+    }
+  }
+}
 export async function loadSongsData() {
   const status = await CheckDbAndInit();
-  if (status) {
+  if (status && false) {
     console.log("in if");
     const db_resp = await getAllSongData();
     const medialib_resp = (
